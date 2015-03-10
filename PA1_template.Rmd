@@ -8,18 +8,62 @@ output:
 
 ## Loading and preprocessing the data
 
+```{r,echo=TRUE}
+D <- read.csv("activity.csv")
+D$date <- as.Date(D$date,format="%Y-%m-%d")
+D2 <- D[complete.cases(D),]
 
+```
 
 ## What is mean total number of steps taken per day?
 
+```{r,echo=TRUE}
+steps.sum <- tapply(D2$steps,D2$date,sum)
+hist(steps.sum,main="",xlab="number of steps taken per day",col="pink")
+```  
 
+The mean number of steps/day is `r mean(steps.sum)`.   
+The median number of steps/day is `r median(steps.sum)`.
 
 ## What is the average daily activity pattern?
+```{r,echo=TRUE}
+steps.ave <- tapply(D2$steps,D2$interval,mean)
+plot(as.numeric(names(steps.ave)),steps.ave,main="",xlab="time interval",ylab="number of steps",col="pink",type="l",lwd=3)
+```  
 
+The interval `r names(steps.ave)[steps.ave==max(steps.ave)]` has the maximum number of steps.
 
+## Imputing missing values  
+There are `r nrow(D[complete.cases(D)==FALSE,])` cases with missing values.    
 
-## Imputing missing values
+First we create a new dataset where the NAs are replaced with the mean value of the same time interval.
 
+```{r,echo=TRUE}
+D3 <- D
+for (r in 1:nrow(D3)){
+  if (is.na(D3$steps[r])){
+    D3$steps[r] <- steps.ave[names(steps.ave)==D3$interval[r]]
+  }
+}
+```
+
+Then we plot the histogram as before:  
+```{r,echo=TRUE}
+steps.sum.im <- tapply(D3$steps,D3$date,sum)
+hist(steps.sum.im,main="",xlab="number of steps taken per day",col="blue")
+```  
+
+After imputing missing values, the mean number of steps/day is `r mean(steps.sum.im)`.   
+After imputing missing values, the median number of steps/day is `r median(steps.sum.im)`.  
+Now the mean and median values are equal! The mean value is the same as before imputing the missing vaules.
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+```{r,echo=TRUE}
+D3$weekday <- weekdays(D3$date)
+D3$weekend <- as.factor(ifelse(D3$weekday=="Sunday" | D3$weekday=="Saturday","weekend","weekday"))
+avesteps <- tapply(D3$steps,list(D3$interval,D3$weekend),mean)
+par(mfrow=c(2,1))
+plot(rownames(avesteps),avesteps[,1],type="l",col="darkblue",xlab="interval",ylab="number of steps",main="weekdays")
+plot(rownames(avesteps),avesteps[,2],type="l",col="darkgreen",xlab="interval",ylab="number of steps",main="weekend")
+```
